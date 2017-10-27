@@ -36,7 +36,7 @@ func addScore(w http.ResponseWriter, r *http.Request) {
 				http.StatusInternalServerError)
 		}
 		scoreList = append(scoreList, Score{newScore.Score, time.Now()})
-
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		fmt.Fprint(w, "POST done")
 	} else {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
@@ -45,6 +45,7 @@ func addScore(w http.ResponseWriter, r *http.Request) {
 
 func getBoard(w http.ResponseWriter, r *http.Request) {
 	js, _ := json.Marshal(scoreList)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
 }
