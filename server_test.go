@@ -1,61 +1,60 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
-func TestPingHandler(t *testing.T) {
-	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
-	// pass 'nil' as the third parameter.
-	req, err := http.NewRequest("POST", "/addScore", nil)
+func serverTest(method string, route string, h http.HandlerFunc, reader io.Reader, expected string, expectedStatus int, t *testing.T) {
+
+	req, err := http.NewRequest(method, route, reader)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(addScore)
+	handler := http.HandlerFunc(h)
 
-	// Our handlers satisfy http.Handler, so we can call their ServeHTTP method
-	// directly and pass in our Request and ResponseRecorder.
 	handler.ServeHTTP(rr, req)
 
-	// Check the status code is what we expect.
-	if status := rr.Code; status != http.StatusOK {
+	if rr.Code != expectedStatus {
 		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
+			rr.Code, expectedStatus)
+	}
+
+	if rr.Body.String() != expected && expected != "" {
+		t.Errorf("handler returned unexpected body: got %v want %v",
+			rr.Body.String(), expected)
 	}
 }
 
+func TestAddScoreHandlerGoodPost(t *testing.T) {
+	body, _ := json.Marshal(Score{100, time.Now()})
+	serverTest("POST", "/addScore", addScore, bytes.NewReader(body), "", http.StatusOK, t)
+}
+func TestAddScoreHandlerBadPost(t *testing.T) {
+	serverTest("POST", "/addScore", addScore, bytes.NewReader([]byte("badString")), "", http.StatusInternalServerError, t)
+}
+
+func TestAddScoreHandlerGet(t *testing.T) {
+	serverTest("GET", "/addScore", addScore, nil, "", http.StatusMethodNotAllowed, t)
+}
+
 func TestGetBoardHandler(t *testing.T) {
-	ResetScore()
-	// Create a request to pass to our handler. We don't have any query parameters for now, so we'll
-	// pass 'nil' as the third parameter.
-	req, err := http.NewRequest("GET", "/getBoard", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	resetScore()
+	serverTest("GET", "/getBoard", getBoard, nil, "[]", http.StatusOK, t)
+}
 
-	// We create a ResponseRecorder (which satisfies http.ResponseWriter) to record the response.
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(getBoard)
-
-	// Our handlers satisfy http.Handler, so we can call their ServeHTTP method
-	// directly and pass in our Request and ResponseRecorder.
-	handler.ServeHTTP(rr, req)
-
-	// Check the status code is what we expect.
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
-	}
-
-	// Check the response body is what we expect.
-	expected := `[]`
-	if rr.Body.String() != expected {
-		t.Errorf("handler returned unexpected body: got %v want %v",
-			rr.Body.String(), expected)
+func TestResetScoreHandler(t *testing.T) {
+	scoreList = append(scoreList, Score{100, time.Now()})
+	resetScore()
+	if len(scoreList) != 0 {
+		t.Errorf("resetScore did not clear scores: got %v want %v",
+			len(scoreList), 0)
 	}
 }

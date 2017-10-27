@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -9,30 +10,37 @@ import (
 
 // Score ...
 type Score struct {
-	ID    int       `json:"id"`
 	Score int       `json:"score"`
-	Date  time.Time `json:"date"`
+	Date  time.Time `json:"date,omitempty"`
 }
 
 var scoreList []Score
 
 func main() {
 	//routing
-	http.HandleFunc("/", ping)
+	resetScore()
 	http.HandleFunc("/addScore", addScore)
 	http.HandleFunc("/getBoard", getBoard)
 	log.Fatal(http.ListenAndServe("localhost:8080", nil))
 }
 
-func ping(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Server", "A Go Web Server")
-	w.WriteHeader(200)
-}
-
 func addScore(w http.ResponseWriter, r *http.Request) {
-	scoreList = append(scoreList, Score{1, 100, time.Now()})
-	w.Header().Set("Server", "A Go Web Server")
-	w.WriteHeader(200)
+	if r.Method == "POST" {
+		decoder := json.NewDecoder(r.Body)
+		var newScore Score
+
+		err := decoder.Decode(&newScore)
+
+		if err != nil {
+			http.Error(w, "Error reading request body",
+				http.StatusInternalServerError)
+		}
+		scoreList = append(scoreList, Score{newScore.Score, time.Now()})
+
+		fmt.Fprint(w, "POST done")
+	} else {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+	}
 }
 
 func getBoard(w http.ResponseWriter, r *http.Request) {
@@ -41,6 +49,6 @@ func getBoard(w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 }
 
-func ResetScore() {
+func resetScore() {
 	scoreList = scoreList[:0]
 }
