@@ -12,6 +12,8 @@ import (
 
 func serverTest(method string, route string, h http.HandlerFunc, reader io.Reader, expected string, expectedStatus int, t *testing.T) {
 
+	setIgnoreDB(true)
+
 	req, err := http.NewRequest(method, route, reader)
 	if err != nil {
 		t.Fatal(err)
