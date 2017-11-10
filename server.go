@@ -10,6 +10,7 @@ import (
 
 // Score ...
 type Score struct {
+	Name  string    `json:"name"`
 	Score int       `json:"score"`
 	Date  time.Time `json:"date,omitempty"`
 }
@@ -35,7 +36,7 @@ func addScore(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Error reading request body",
 				http.StatusInternalServerError)
 		}
-		scoreList = append(scoreList, Score{newScore.Score, time.Now()})
+		scoreList = append(scoreList, Score{newScore.Name, newScore.Score, time.Now()})
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		fmt.Fprint(w, "POST done")
 	} else {

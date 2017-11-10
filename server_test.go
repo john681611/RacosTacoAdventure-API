@@ -34,7 +34,17 @@ func serverTest(method string, route string, h http.HandlerFunc, reader io.Reade
 }
 
 func TestAddScoreHandlerGoodPost(t *testing.T) {
-	body, _ := json.Marshal(Score{100, time.Now()})
+	body, _ := json.Marshal(Score{"jim", 100, time.Now()})
+	serverTest("POST", "/addScore", addScore, bytes.NewReader(body), "", http.StatusOK, t)
+}
+
+func TestAddScoreHandlerGoodPostMinusTime(t *testing.T) {
+	mcPostBody := map[string]interface{}{
+		"name":  "dave",
+		"score": 999,
+	}
+
+	body, _ := json.Marshal(mcPostBody)
 	serverTest("POST", "/addScore", addScore, bytes.NewReader(body), "", http.StatusOK, t)
 }
 func TestAddScoreHandlerBadPost(t *testing.T) {
@@ -51,7 +61,7 @@ func TestGetBoardHandler(t *testing.T) {
 }
 
 func TestResetScoreHandler(t *testing.T) {
-	scoreList = append(scoreList, Score{100, time.Now()})
+	scoreList = append(scoreList, Score{"jim", 100, time.Now()})
 	resetScore()
 	if len(scoreList) != 0 {
 		t.Errorf("resetScore did not clear scores: got %v want %v",
