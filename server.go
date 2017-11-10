@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 	"time"
-
+	"sort"
 	mgo "gopkg.in/mgo.v2"
 )
 
@@ -16,6 +16,12 @@ type Score struct {
 	Score int       `json:"score"`
 	Date  time.Time `json:"date,omitempty"`
 }
+
+type ByScore []Score
+
+func (c ByScore) Len() int           { return len(c) }
+func (c ByScore) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
+func (c ByScore) Less(i, j int) bool { return c[i].Score > c[j].Score }
 
 var scoreList []Score
 var ignoreDB = false
@@ -36,6 +42,7 @@ func addScore(w http.ResponseWriter, r *http.Request) {
 		err := decoder.Decode(&newScore)
 
 		if err != nil {
+			fmt.Println("Error: Addscore: ", err)
 			http.Error(w, "Error reading request body",
 				http.StatusInternalServerError)
 		}
@@ -59,6 +66,7 @@ func getBoard(w http.ResponseWriter, r *http.Request) {
 	} else {
 		response = getDBLeaderBoard()
 	}
+	sort.Sort(ByScore(response))
 	js, _ := json.Marshal(response)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
